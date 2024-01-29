@@ -1,1 +1,1 @@
-# flictionary
+# Arts and ML Project 1: Collective Inpainting
