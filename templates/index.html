@@ -1,0 +1,18 @@
+<!-- templates/index.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Web App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body style="background-image: url('{{ url_for('static', filename='background.jpg') }}');">
+    <div class="container">
+        <h1>Add Something</h1>
+        <form method="POST" action="/">
+            <input type="text" name="item" placeholder="Enter something...">
+            <input type="submit" value="Add">
+        </form>
+    </div>
+</body>
+</html>
