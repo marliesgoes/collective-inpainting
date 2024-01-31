@@ -8,16 +8,36 @@ import replicate
 import os
 import random
 import requests
+from openai import OpenAI
+
 
 load_dotenv()
+client = OpenAI()
 
 app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        item = request.form.get('item')
-        print(f'Added: {item}')
+        prompt = request.form.get('item')
+        print(f'Added: {prompt}')
+
+        messages = [{
+            'role': 'user',
+            'content': f'''
+                {prompt}\n
+                I want to generate a wallpaper image for this memory. 
+                The image shouldn't have any intricate images or designs, 
+                and more represent the general mood of the memory through 
+                colors and shapes.
+                
+                Please return a prompt that I can pass to a diffusion 
+                model to create such an image. 
+            '''
+            }]
+
+        gpt_response = call_gpt(client, messages, "gpt-3.5-turbo-1106")
+        print(f'gpt_response: {gpt_response}')
 
         # Get a random mask filename
         mask_filename = get_random_mask()
@@ -44,7 +64,7 @@ def index():
                 "image": image_file_url,
                 "width": 1024,
                 "height": 768,
-                "prompt": item,
+                "prompt": gpt_response,
                 "scheduler": "DPMSolverMultistep",
                 "num_outputs": 1,
                 "guidance_scale": 7.5,
@@ -61,7 +81,7 @@ def index():
                 f.write(response.content)
             # Save the downloaded image in the archive
             archive_folder = os.path.join('static', 'archive')
-            archive_path = os.path.join(archive_folder, get_filename())
+            archive_path = os.path.join(archive_folder, get_filename(prompt))
             with open(archive_path, 'wb') as f:
                 f.write(response.content)
     return render_template('index.html')
@@ -73,10 +93,20 @@ def get_random_mask():
     return path
 
 def get_image_path():
+    # return os.path.join('static/archive', 'background_fence.jpg')
     return os.path.join('static', 'background.jpg')
 
-def get_filename():
-    return datetime.now().strftime("%d%m%y_%H%M%S.jpg")
+def get_filename(prompt):
+    timestamp = datetime.now().strftime("%d%m%y_%H%M%S_")
+    return timestamp + prompt.replace(' ','')[:20] + '.jpg'
+
+def call_gpt(client, messages, model):
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages
+    )
+
+    return response.choices[0].message.content.strip()
 
 if __name__ == '__main__':
     app.run()

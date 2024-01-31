@@ -2,11 +2,12 @@
 
 ## TODO
 
-- Create Wimmelbild
-- Build Webapp
+- Create Wimmelbild ✅
+- Build Webapp ✅
 - Turn user input to image prompt (GPT-4)
-- Create mask to select room
-- Stable diff to manipulate Wimmelbild
+- Create mask to select room ✅
+- Stable diff to manipulate Wimmelbild ✅
+- Make better masks
 
 
 - Try InstructPix2Pix
