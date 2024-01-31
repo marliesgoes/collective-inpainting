@@ -4,10 +4,12 @@ from flask import Flask, render_template, request, url_for
 from dotenv import load_dotenv
 from datetime import datetime
 from google_utils import upload_to_drive, get_shareable_link
+from image_utils import merge_images
 import replicate
 import os
 import random
 import requests
+import shutil
 from openai import OpenAI
 
 
@@ -34,62 +36,54 @@ def index():
                 Please return a prompt that I can pass to a diffusion 
                 model to create such an image, briefly describing in one paragraph 
                 how that image should look like. Return only the prompt.
-
-                Start with the words 'Paint the fence with...'
             '''
             }]
 
         gpt_response = call_gpt(client, messages, "gpt-4-1106-preview")
         print(f'gpt_response: {gpt_response}')
 
-        # Get a random mask filename
-        mask_filename = get_random_mask()
-        image_filename = get_image_path()
-        print(f'mask_filename: {mask_filename}')
-        print(f'image_filename: {image_filename}')
-
-        # Upload files to Google Drive and get shareable links
-        mask_file_id = upload_to_drive(os.path.basename(mask_filename), mask_filename, 'image/png')
-        image_file_id = upload_to_drive(os.path.basename(image_filename), image_filename, 'image/png')
-
-        mask_file_url = get_shareable_link(mask_file_id)
-        image_file_url = get_shareable_link(image_file_id)
-        
-        print('mask_file_url', mask_file_url)
-        print('image_file_url', image_file_url)
-
-        background_path = os.path.join('static', 'background.jpg')
+        prev_image = get_image_path()
+        prev_image_id = upload_to_drive(os.path.basename(prev_image), prev_image, 'image/png')
+        prev_image_url = get_shareable_link(prev_image_id)
 
         output = replicate.run(
-            "stability-ai/stable-diffusion-inpainting:c11bac58203367db93a3c552bd49a25a5418458ddffb7e90dae55780765e26d6",
+            "stability-ai/stable-diffusion-img2img:15a3689ee13b0d2616e98820eca31d4c3abcd36672df6afce5cb6feb1d66087d",
             input={
-                "mask": mask_file_url,
-                "image": image_file_url,
+                "image": prev_image_url,
+                "prompt": gpt_response,
                 "width": 1024,
                 "height": 768,
-                "prompt": gpt_response,
-                "scheduler": "DPMSolverMultistep",
                 "num_outputs": 1,
-                "guidance_scale": 7.5,
-                "num_inference_steps": 25
+                "guidance_scale": 9,
+                "prompt_strength": 0.99,
+                "num_inference_steps": 10
             }
         )
 
         # Download the image from the Replicate API
         response = requests.get(output[0])
 
+        # Write plain result to archive
+        archive_folder = os.path.join('static', 'archive')
+        archive_path_raw = os.path.join(archive_folder, get_filename('raw_' + prompt))
         if response.status_code == 200:
-            # Save the downloaded image as the new background.jpg
-            with open(background_path, 'wb') as f:
+            # Save the downloaded image as prev_image
+            with open(archive_path_raw, 'wb') as f:
                 f.write(response.content)
-            # Save the downloaded image in the archive
-            archive_folder = os.path.join('static', 'archive')
-            archive_path = os.path.join(archive_folder, get_filename(prompt))
-            with open(archive_path, 'wb') as f:
-                f.write(response.content)
+
+        mask_filename = get_mask_path()
+
+        # Merge results and write to archive and background
+        background_path = os.path.join('static', 'background.jpg')
+        merge_images(background_path, archive_path_raw, mask_filename, background_path)
+        archive_path_merged = os.path.join(archive_folder, get_filename('merged_' + prompt))
+        shutil.copy(background_path, archive_path_merged)
+        # update prev_image
+        shutil.copy(archive_path_raw, prev_image)
+
     return render_template('index.html')
 
-def get_random_mask():
+def get_mask_path():
     mask_files = [file for file in os.listdir('static/masks/') if file.endswith('.jpg')]
     random_file = random.choice(mask_files)
     path = os.path.join('static/masks', random_file)
@@ -97,7 +91,7 @@ def get_random_mask():
 
 def get_image_path():
     # return os.path.join('static/archive', 'background_fence.jpg')
-    return os.path.join('static', 'background.jpg')
+    return os.path.join('static', 'prev_image.jpg')
 
 def get_filename(prompt):
     timestamp = datetime.now().strftime("%d%m%y_%H%M%S_")
