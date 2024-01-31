@@ -3,6 +3,7 @@
 from flask import Flask, render_template, request, url_for
 from dotenv import load_dotenv
 from datetime import datetime
+from google_utils import upload_to_drive, get_shareable_link
 import replicate
 import os
 import random
@@ -19,20 +20,28 @@ def index():
         print(f'Added: {item}')
 
         # Get a random mask filename
-        hostname = request.host_url.rstrip('/')
-        mask_filename = get_random_mask(hostname)
-        image_filename = get_image_path(hostname)
+        mask_filename = get_random_mask()
+        image_filename = get_image_path()
+        print(f'mask_filename: {mask_filename}')
+        print(f'image_filename: {image_filename}')
 
-        print('mask_filename', mask_filename)
-        print('image_filename', image_filename)
+        # Upload files to Google Drive and get shareable links
+        mask_file_id = upload_to_drive(os.path.basename(mask_filename), mask_filename, 'image/png')
+        image_file_id = upload_to_drive(os.path.basename(image_filename), image_filename, 'image/png')
+
+        mask_file_url = get_shareable_link(mask_file_id)
+        image_file_url = get_shareable_link(image_file_id)
+        
+        print('mask_file_url', mask_file_url)
+        print('image_file_url', image_file_url)
 
         background_path = os.path.join('static', 'background.jpg')
 
         output = replicate.run(
             "stability-ai/stable-diffusion-inpainting:c11bac58203367db93a3c552bd49a25a5418458ddffb7e90dae55780765e26d6",
             input={
-                "mask": mask_filename,
-                "image": image_filename,
+                "mask": mask_file_url,
+                "image": image_file_url,
                 "width": 512,
                 "height": 512,
                 "prompt": item,
@@ -57,15 +66,14 @@ def index():
                 f.write(response.content)
     return render_template('index.html')
 
-def get_random_mask(hostname):
+def get_random_mask():
     mask_files = os.listdir('static/masks/')
     random_file = random.choice(mask_files)
-    path = os.path.join(hostname, 'static/masks')
-    return os.path.join(path, random_file)
+    path = os.path.join('static/masks', random_file)
+    return path
 
-def get_image_path(hostname):
-    url = url_for('static', filename='background.jpg')
-    return hostname + url
+def get_image_path():
+    return os.path.join('static', 'background.jpg')
 
 def get_filename():
     return datetime.now().strftime("%d%m%y_%H%M%S.jpg")
