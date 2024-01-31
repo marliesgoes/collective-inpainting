@@ -164,3 +164,4 @@ output/*
 *credentials.json*
 */archive/*
 */masks_archive/*
+*.pickle

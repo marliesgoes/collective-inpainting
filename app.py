@@ -32,11 +32,14 @@ def index():
                 colors and shapes.
                 
                 Please return a prompt that I can pass to a diffusion 
-                model to create such an image. 
+                model to create such an image, briefly describing in one paragraph 
+                how that image should look like. Return only the prompt.
+
+                Start with the words 'Paint the fence with...'
             '''
             }]
 
-        gpt_response = call_gpt(client, messages, "gpt-3.5-turbo-1106")
+        gpt_response = call_gpt(client, messages, "gpt-4-1106-preview")
         print(f'gpt_response: {gpt_response}')
 
         # Get a random mask filename
