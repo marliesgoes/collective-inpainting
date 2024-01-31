@@ -42,8 +42,8 @@ def index():
             input={
                 "mask": mask_file_url,
                 "image": image_file_url,
-                "width": 512,
-                "height": 512,
+                "width": 1024,
+                "height": 768,
                 "prompt": item,
                 "scheduler": "DPMSolverMultistep",
                 "num_outputs": 1,
@@ -67,7 +67,7 @@ def index():
     return render_template('index.html')
 
 def get_random_mask():
-    mask_files = os.listdir('static/masks/')
+    mask_files = [file for file in os.listdir('static/masks/') if file.endswith('.jpg')]
     random_file = random.choice(mask_files)
     path = os.path.join('static/masks', random_file)
     return path
