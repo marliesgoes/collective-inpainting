@@ -1,5 +1,7 @@
 # Arts and ML Project 1: Collective Inpainting
 
+![Fence Title Image](./static/fence_title.png)
+
 ## Instructions
 
 Make sure to install all the requirements.
