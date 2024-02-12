@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-def merge_images(image_path_1, image_path_2, mask_path, save_path):
+def merge_images(image_path_1, image_path_2, mask_path, save_path, blur_amount=5):
     print('image_path_1:', image_path_1)
     print('image_path_2:', image_path_2)
     print('mask_path:', mask_path)
@@ -15,8 +15,14 @@ def merge_images(image_path_1, image_path_2, mask_path, save_path):
     initial_image = cv2.resize(initial_image, (generated_image.shape[1], generated_image.shape[0]))
     mask_image = cv2.resize(mask_image, (generated_image.shape[1], generated_image.shape[0]))
 
-    # Normalize the mask to be in the range of [0, 1] for blending
-    mask_normalized = mask_image / 255.0
+    # Apply Gaussian blur to the mask to soften edges
+    # blur_amount should be odd
+    if blur_amount % 2 == 0:
+        blur_amount += 1
+    blurred_mask = cv2.GaussianBlur(mask_image, (blur_amount, blur_amount), 0)
+
+    # Normalize the blurred mask to be in the range of [0, 1] for blending
+    mask_normalized = blurred_mask / 255.0
     inverse_mask_normalized = 1.0 - mask_normalized
 
     # Ensure mask arrays have three channels to match the images' dimensions
