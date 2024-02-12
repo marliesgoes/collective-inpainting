@@ -54,7 +54,7 @@ def index():
                 "width": 1024,
                 "height": 768,
                 "num_outputs": 1,
-                "guidance_scale": 9,
+                "guidance_scale": 7.5,
                 "prompt_strength": 0.99,
                 "num_inference_steps": 10
             }
