@@ -1,0 +1,11 @@
+flask
+python-dotenv
+google-auth
+google-auth-oauthlib
+google-auth-transport-requests
+google-api-python-client
+numpy
+openai
+opencv-python
+replicate
+requests
