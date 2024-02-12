@@ -11,3 +11,5 @@
 
 
 - Try InstructPix2Pix
+- Plant trees on towers tool
+- Other tools than stable diffusion that detects the edges
